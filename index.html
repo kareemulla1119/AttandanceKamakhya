@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attendance Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+        
+        <div class="bg-blue-600 p-6 text-center">
+            <h1 class="text-2xl font-bold text-white">Daily Attendance</h1>
+            <p class="text-blue-100 text-sm mt-1">Secure Location-Based Logging</p>
+        </div>
+
+        <div class="p-8">
+            <form id="attendanceForm" class="space-y-6">
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Select Employee</label>
+                    <div class="relative">
+                        <select name="employeeName" required
+                            class="block appearance-none w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-blue-500 transition">
+                            <option value="" disabled selected>Choose your name...</option>
+                            <option value="Rahul Sharma">Kareem</option>
+                            <option value="Priya Reddy">Hemant</option>
+                            <option value="Ahmed Khan">Sai Prasad</option>
+                            <option value="Suresh Kumar">Nazeem</option>
+                            <option value="Suresh Kumar">Aravind</option>
+
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Select Action</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="actionType" value="Login" class="peer sr-only" onchange="toggleFields()" checked>
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center hover:bg-gray-50 peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 transition">
+                                <i class="fas fa-sign-in-alt mb-1 text-xl block"></i>
+                                <span class="text-sm font-semibold">Login</span>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer">
+                            <input type="radio" name="actionType" value="Logout" class="peer sr-only" onchange="toggleFields()">
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center hover:bg-gray-50 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 transition">
+                                <i class="fas fa-sign-out-alt mb-1 text-xl block"></i>
+                                <span class="text-sm font-semibold">Logout</span>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer">
+                            <input type="radio" name="actionType" value="Leave" class="peer sr-only" onchange="toggleFields()">
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center hover:bg-gray-50 peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:text-orange-700 transition">
+                                <i class="fas fa-user-clock mb-1 text-xl block"></i>
+                                <span class="text-sm font-semibold">Leave</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="reportContainer" class="hidden transition-all duration-300">
+                    <label id="reportLabel" class="block text-gray-700 text-sm font-bold mb-2">Daily Work Report</label>
+                    <textarea name="workReport" id="workReportField" rows="4" 
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        placeholder="List the tasks completed today..."></textarea>
+                </div>
+
+                <input type="hidden" name="latitude" id="lat">
+                <input type="hidden" name="longitude" id="long">
+
+                <button type="submit" id="submitBtn" disabled
+                    class="w-full bg-gray-400 text-white font-bold py-4 px-6 rounded-xl shadow-lg cursor-not-allowed transition duration-300 flex items-center justify-center gap-2">
+                    <i class="fas fa-map-marker-alt animate-pulse"></i>
+                    <span>Detecting Location...</span>
+                </button>
+
+            </form>
+
+            <div id="messageBox" class="mt-4 hidden p-4 rounded-xl text-sm font-medium text-center"></div>
+        </div>
+    </div>
+
+    <script>
+        // ***********************************************
+        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+        // ***********************************************
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbxB9yAhYhkF4OX6wlvAhSc8jQtx4MsHpV5iTGuR8TETvazOeYyIcR-o3jBfzArPKIox/exec';
+
+        const form = document.forms['attendanceForm'];
+        const submitBtn = document.getElementById('submitBtn');
+        const latInput = document.getElementById('lat');
+        const longInput = document.getElementById('long');
+        const messageBox = document.getElementById('messageBox');
+        const reportContainer = document.getElementById('reportContainer');
+        const reportLabel = document.getElementById('reportLabel');
+        const reportField = document.getElementById('workReportField');
+
+        // 1. Dynamic Form Logic
+        function toggleFields() {
+            const action = document.querySelector('input[name="actionType"]:checked').value;
+            
+            if (action === 'Login') {
+                reportContainer.classList.add('hidden');
+                reportField.required = false;
+                reportField.value = ''; 
+            } else if (action === 'Logout') {
+                reportContainer.classList.remove('hidden');
+                reportLabel.innerText = "What have you done today? (Required)";
+                reportField.placeholder = "Designed the homepage, fixed CSS bugs, client meeting...";
+                reportField.required = true;
+            } else if (action === 'Leave') {
+                reportContainer.classList.remove('hidden');
+                reportLabel.innerText = "Reason for Leave";
+                reportField.placeholder = "Sick leave, Personal emergency...";
+                reportField.required = true;
+            }
+        }
+
+        // 2. Geolocation Logic (Runs on Load)
+        window.onload = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(successLocation, errorLocation, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            } else {
+                showError("Geolocation is not supported by this browser.");
+            }
+        };
+
+        function successLocation(position) {
+            latInput.value = position.coords.latitude;
+            longInput.value = position.coords.longitude;
+            
+            // Enable button
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'transform', 'hover:scale-105');
+            submitBtn.innerHTML = 'Submit Attendance';
+        }
+
+        function errorLocation(error) {
+            let msg = "Location required.";
+            switch(error.code) {
+                case error.PERMISSION_DENIED: msg = "Please allow location access to submit attendance."; break;
+                case error.POSITION_UNAVAILABLE: msg = "Location information unavailable."; break;
+                case error.TIMEOUT: msg = "Location request timed out."; break;
+            }
+            submitBtn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${msg}`;
+        }
+
+        // 3. Submit Logic
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
+            messageBox.classList.add('hidden');
+
+            fetch(scriptURL, { method: 'POST', body: new FormData(form) })
+                .then(response => response.json())
+                .then(response => {
+                    messageBox.classList.remove('hidden');
+                    if (response.result === 'success') {
+                        messageBox.className = "mt-4 p-4 rounded-xl text-sm font-medium text-center bg-green-100 text-green-800";
+                        messageBox.innerHTML = `<i class="fas fa-check-circle"></i> ${response.message}`;
+                        form.reset();
+                        // Reset to default state
+                        setTimeout(() => { window.location.reload(); }, 2500);
+                    } else {
+                        // Script Logic Error (e.g., Double Login)
+                        messageBox.className = "mt-4 p-4 rounded-xl text-sm font-medium text-center bg-red-100 text-red-800";
+                        messageBox.innerHTML = `<i class="fas fa-times-circle"></i> ${response.message}`;
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit Attendance';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error!', error.message);
+                    messageBox.className = "mt-4 p-4 rounded-xl text-sm font-medium text-center bg-red-100 text-red-800";
+                    messageBox.innerText = "Network Error. Please try again.";
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Submit Attendance';
+                });
+        });
+    </script>
+</body>
+</html>
